@@ -51,7 +51,7 @@ client = genai.Client(api_key=api_key)
 
 # 3. Secure your Cloudflare validation point
 # PASTE YOUR PRIVATE SECRET KEY FROM CLOUDFLARE INSIDE THE QUOTES BELOW:
-CLOUDFLARE_SECRET_KEY = "YOUR_CLOUDFLARE_SECRET_KEY_HERE"
+CLOUDFLARE_SECRET_KEY = "0x4AAAAAADuoyNVLmJGy7cueGPTKkC47VD8"
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
