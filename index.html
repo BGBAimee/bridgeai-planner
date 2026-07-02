@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BridgeAIPH Social Media Planner</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f4f7f6; display: flex; justify-content: center; }
+        .chat-container { width: 100%; max-width: 600px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 550px; overflow: hidden; }
+        .chat-header { background: #008080; color: white; padding: 15px; text-align: center; font-size: 1.1em; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .message { max-width: 80%; padding: 12px 16px; border-radius: 8px; line-height: 1.4; font-size: 0.95em; white-space: pre-line; }
+        .bot { background: #e6f2f2; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .user { background: #008080; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .chat-input-area { border-top: 1px solid #eee; padding: 15px; display: flex; gap: 10px; background: #fff; }
+        textarea { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 10px; resize: none; height: 40px; font-family: inherit; font-size: 0.95em; }
+        textarea:focus { outline: none; border-color: #008080; }
+        button { background: #008080; color: white; border: none; border-radius: 6px; padding: 0 20px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #006666; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .loading-dots { display: none; align-self: flex-start; background: #e6f2f2; padding: 12px 16px; border-radius: 8px; color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">🌸 BridgeAIPH Social Media Planner 🌸</div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="message bot">Kumusta! I am your BridgeAIPH Social Media Concierge. 
+
+Para masimulan natin ang iyong weekly content plan, please give me these 3 details:
+1. **Pangalan ng Negosyo (Business Name)**
+2. **Eksaktong Lokasyon sa Pilipinas**
+3. **Ano ang iyong Produkto o Serbisyo**</div>
+    </div>
+    <div class="message loading-dots" id="loadingIndicator">Waking up your AI concierge... Sumasagot na po...</div>
+    <div class="chat-input-area">
+        <textarea id="userInput" placeholder="I-type ang mensahe dito..."></textarea>
+        <button id="sendBtn" onclick="sendMessage()">Ipadala</button>
+    </div>
+</div>
+
+<script>
+    // PASTE YOUR BLUE RENDER URL HERE (Make sure it has /chat at the very end!)
+    const BACKEND_URL = "https://msme-planner.onrender.com/chat"; 
+
+    const userInput = document.getElementById('userInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const sendBtn = document.getElementById('sendBtn');
+
+    // Allow pressing Enter to send message
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // Append User Message
+        appendMessage(text, 'user');
+        userInput.value = '';
+        
+        // Show Loading state
+        loadingIndicator.style.display = 'block';
+        sendBtn.disabled = true;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        try {
+            const response = await fetch(BACKEND_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+
+            const data = await response.json();
+            
+            // Hide Loading and Append Bot Reply
+            loadingIndicator.style.display = 'none';
+            sendBtn.disabled = false;
+            
+            if(data.reply) {
+                appendMessage(data.reply, 'bot');
+            } else {
+                appendMessage("Pasensya na, may kaunting error. Paki-subukan muli.", 'bot');
+            }
+        } catch (error) {
+            loadingIndicator.style.display = 'none';
+            sendBtn.disabled = false;
+            appendMessage("Hindi maabot ang server. Baka nagigising pa ang AI, paki-send muli pagkatapos ng 30 segundo.", 'bot');
+            console.error(error);
+        }
+        
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function appendMessage(text, sender) {
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message', sender);
+        msgDiv.innerHTML = text;
+        chatMessages.appendChild(msgDiv);
+    }
+</script>
+
+</body>
+</html>
