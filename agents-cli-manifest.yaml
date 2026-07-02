@@ -1,0 +1,7 @@
+name: msme_planner
+agent_directory: .
+agent_file: agent.py
+deployment:
+  deployment_target: none
+create_params:
+  session_type: in_memory
