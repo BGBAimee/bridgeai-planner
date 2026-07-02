@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BridgeAIPH Social Media Planner</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f4f7f6; display: flex; justify-content: center; }
         .chat-container { width: 100%; max-width: 600px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 550px; overflow: hidden; }
@@ -34,6 +35,7 @@ Para masimulan natin ang iyong weekly content plan, please give me these 3 detai
 3. **Ano ang iyong Produkto o Serbisyo**</div>
     </div>
     <div class="message loading-dots" id="loadingIndicator">Waking up your AI concierge... Sumasagot na po...</div>
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAADuoyKd8-uUSxS0c" data-callback="onTurnstileSuccess"></div>
     <div class="chat-input-area">
         <textarea id="userInput" placeholder="I-type ang mensahe dito..."></textarea>
         <button id="sendBtn" onclick="sendMessage()">Ipadala</button>
@@ -43,6 +45,11 @@ Para masimulan natin ang iyong weekly content plan, please give me these 3 detai
 <script>
     // PASTE YOUR BLUE RENDER URL HERE (Make sure it has /chat at the very end!)
     const BACKEND_URL = "https://msme-planner.onrender.com/chat"; 
+
+    let captchaToken = "";
+    function onTurnstileSuccess(token) {
+    captchaToken = token;
+    }
 
     const userInput = document.getElementById('userInput');
     const chatMessages = document.getElementById('chatMessages');
@@ -60,6 +67,10 @@ Para masimulan natin ang iyong weekly content plan, please give me these 3 detai
     async function sendMessage() {
         const text = userInput.value.trim();
         if (!text) return;
+        if (!captchaToken) {
+            alert("Mangyaring kumpletuhin muna ang security check!");
+            return;
+        }
 
         // Append User Message
         appendMessage(text, 'user');
@@ -74,7 +85,7 @@ Para masimulan natin ang iyong weekly content plan, please give me these 3 detai
             const response = await fetch(BACKEND_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text })
+                body: JSON.stringify({ message: text, captcha_token: captchaToken })
             });
 
             const data = await response.json();
