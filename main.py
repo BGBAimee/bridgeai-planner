@@ -1,4 +1,5 @@
 import os
+import requests  # 1. Added to allow secure HTTP verification calls to Cloudflare
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -17,8 +18,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 2. Updated schema to expect the incoming captcha token from your index.html
 class ChatRequest(BaseModel):
     message: str
+    captcha_token: str
 
 # System Instructions with Guardrails & Local Alignment
 SYSTEM_INSTRUCTION = """
@@ -46,8 +49,31 @@ if not api_key:
 
 client = genai.Client(api_key=api_key)
 
+# 3. Secure your Cloudflare validation point
+# PASTE YOUR PRIVATE SECRET KEY FROM CLOUDFLARE INSIDE THE QUOTES BELOW:
+CLOUDFLARE_SECRET_KEY = "YOUR_CLOUDFLARE_SECRET_KEY_HERE"
+
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
+    # A. Intercept the request and verify the captcha token with Cloudflare
+    try:
+        verify_response = requests.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data={
+                "secret": CLOUDFLARE_SECRET_KEY,
+                "response": request.captcha_token
+            },
+            timeout=5 # Safe timeout to ensure performance doesn't hang
+        )
+        captcha_result = verify_response.json()
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"Security service verification failed: {str(err)}")
+        
+    # B. If Cloudflare determines it's an automated bot request, slam the door shut instantly
+    if not captcha_result.get("success"):
+        raise HTTPException(status_code=401, detail="Access Denied. Invalid security token.")
+
+    # C. If a verified human passes, proceed normally to calculate your Gemini model logic
     try:
         response = client.models.generate_content(
             model='gemini-2.5-flash',
@@ -55,8 +81,8 @@ async def chat_endpoint(request: ChatRequest):
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,
                 temperature=0.7,
+                )
             )
-        )
         return {"reply": response.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
